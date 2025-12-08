@@ -1,0 +1,240 @@
+# Ckester .gitignore
+
+# ==================== Build Artifacts ====================
+
+# Build directory
+build/
+*.out
+*.exe
+*.o
+*.obj
+*.a
+*.so
+*.dylib
+*.dll
+
+# Compiled binaries
+ckester
+bin/ckester
+
+# Test binaries (hashed names)
+*.test.out
+
+# ==================== C/C++ ====================
+
+# Prerequisites
+*.d
+
+# Compiled object files
+*.slo
+*.lo
+*.ko
+
+# Precompiled headers
+*.gch
+*.pch
+
+# Static libraries
+*.la
+*.lib
+
+# Shared objects / dynamic libraries
+*.so.*
+*.dylib.*
+
+# Executables
+*.app
+*.i*86
+*.x86_64
+*.hex
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# Kernel module compile results
+*.mod*
+*.cmd
+.tmp_versions/
+modules.order
+Module.symvers
+Mkfile.old
+dkms.conf
+
+# ==================== Editor / IDE ====================
+
+# VSCode
+.vscode/
+*.code-workspace
+.history/
+
+# Vim
+*.swp
+*.swo
+*~
+.*.sw?
+Session.vim
+.netrwhist
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# JetBrains IDEs (CLion, etc.)
+.idea/
+*.iml
+*.iws
+out/
+cmake-build-*/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# ==================== Operating System ====================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Linux
+.directory
+.Trash-*
+.nfs*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+*.stackdump
+
+# ==================== Documentation ====================
+
+# Generated documentation
+docs/html/
+docs/latex/
+docs/man/
+*.pdf
+!docs/**/*.pdf
+
+# Doxygen
+Doxyfile.bak
+
+# ==================== Test Results ====================
+
+# Test output files
+test-results/
+test-output/
+*.log
+*.tlog
+
+# Coverage reports
+*.gcov
+*.gcda
+*.gcno
+coverage/
+htmlcov/
+
+# Valgrind
+vgcore.*
+*.memcheck
+
+# ==================== Dependencies ====================
+
+# Keep vendor directory structure but ignore contents
+# (git submodules should be tracked via .gitmodules)
+# If using manual vendor management:
+# vendor/**
+# !vendor/.gitkeep
+
+# ==================== Build System ====================
+
+# CMake (if added later)
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+cmake_install.cmake
+install_manifest.txt
+CTestTestfile.cmake
+_deps/
+
+# Autotools (if added later)
+.deps/
+.libs/
+*.la
+*.lo
+Makefile.in
+aclocal.m4
+autom4te.cache/
+compile
+config.guess
+config.h
+config.h.in
+config.log
+config.status
+config.sub
+configure
+depcomp
+install-sh
+libtool
+ltmain.sh
+missing
+stamp-h1
+
+# ==================== Temporary Files ====================
+
+# Temporary test files
+tmp/
+temp/
+*.tmp
+*.bak
+*.backup
+
+# Core dumps
+core
+core.*
+
+# Not core directories
+!core/
+
+# ==================== Package Management ====================
+
+# If using package managers later
+*.tar.gz
+*.zip
+*.tar
+*.tgz
+
+# ==================== Custom ====================
+
+# User-specific settings (if needed)
+local.mk
+.env
+.env.local
+
+# Benchmark results
+benchmarks/results/
+*.bench
+
+# Keep specific files that might be ignored by patterns above
+# Example: keep a specific vendor README
+!vendor/README.md
