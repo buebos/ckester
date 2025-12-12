@@ -1,14 +1,14 @@
 #ifndef __CKESTER_COMPONENTS_STRING_C__
 #define __CKESTER_COMPONENTS_STRING_C__
 
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
 
 typedef struct Ckester_String {
     size_t length;
     size_t capacity;
-    char *data;
+    char* data;
 } Ckester_String;
 
 typedef struct Ckester_StringInitParams {
@@ -19,7 +19,7 @@ typedef struct Ckester_StringInitParams {
 #define CKESTER_STRING_DEFAULT_CAPACITY 16
 
 /* Simple glob matching: * matches any sequence */
-bool ckester_string_match(const char *str, const char *pattern) {
+bool ckester_string_match(const char* str, const char* pattern) {
     if (!pattern) return false;
     if (!str) return false;
     while (*pattern) {
@@ -42,7 +42,7 @@ bool ckester_string_match(const char *str, const char *pattern) {
     return !*str;
 }
 
-static void _ensure_capacity(Ckester_String *str, size_t needed) {
+static void _ensure_capacity(Ckester_String* str, size_t needed) {
     if (str->length + needed < str->capacity) {
         return;
     }
@@ -52,9 +52,9 @@ static void _ensure_capacity(Ckester_String *str, size_t needed) {
         new_capacity *= 2;
     }
 
-    char *new_data = realloc(str->data, new_capacity * sizeof(char));
+    char* new_data = realloc(str->data, new_capacity * sizeof(char));
     if (new_data == NULL) {
-        return; 
+        return;
     }
 
     str->data = new_data;
@@ -66,16 +66,16 @@ Ckester_String ckester_string_init(Ckester_StringInitParams options) {
     str.length = 0;
     str.capacity = options.capacity > 0 ? options.capacity : CKESTER_STRING_DEFAULT_CAPACITY;
     str.data = calloc(str.capacity, sizeof(char));
-    
+
     if (str.data) {
         str.data[0] = '\0';
     }
     return str;
 }
 
-void ckester_string_push_char(Ckester_String *str, char c) {
+void ckester_string_push_char(Ckester_String* str, char c) {
     _ensure_capacity(str, 1);
-    
+
     if (!str->data) return;
 
     str->data[str->length] = c;
@@ -83,7 +83,7 @@ void ckester_string_push_char(Ckester_String *str, char c) {
     str->data[str->length] = '\0';
 }
 
-void ckester_string_push(Ckester_String *str, const char *other) {
+void ckester_string_push(Ckester_String* str, const char* other) {
     if (other == NULL) return;
 
     size_t len = strlen(other);
@@ -95,20 +95,37 @@ void ckester_string_push(Ckester_String *str, const char *other) {
     str->length += len;
 }
 
-void ckester_string_clear(Ckester_String *str) {
+void ckester_string_clear(Ckester_String* str) {
     str->length = 0;
     if (str->data && str->capacity > 0) {
         str->data[0] = '\0';
     }
 }
 
-void ckester_string_free(Ckester_String *str) {
+void ckester_string_free(Ckester_String* str) {
     if (str->data) {
         free(str->data);
         str->data = NULL;
     }
     str->length = 0;
     str->capacity = 0;
+}
+
+/**
+ * Maybe it could be optimized with ASCII arithmetics.
+ */
+bool ckester_native_string_endswith(char* str, size_t str_len, char* suffix, size_t suffix_len) {
+    if (str_len < suffix_len) {
+        return false;
+    }
+
+    for (int i = suffix_len - 1; i >= 0; i--) {
+        if (str[(str_len - 1) - (suffix_len - 1 - i)] != suffix[i]) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 #endif

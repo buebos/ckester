@@ -3,8 +3,7 @@
 
 #include <setjmp.h>
 #include <stdbool.h>
-
-#define CKESTER_DEFAULT_TEST_PATH "test/suite"
+#include <stddef.h>
 
 /**
  * 5 MB
@@ -34,17 +33,17 @@ typedef struct Ckester_OutputVerbosity {
     bool suite;
     bool test;
     bool assertions;
-    bool show_stdout;
+    bool stdout;
     bool summary;
 } Ckester_OutputVerbosity;
 
 /* Test result tracking. */
 typedef struct Ckester_TestResults {
-    int total;
-    int passed;
-    int failed;
+    size_t total;
+    size_t passed;
+    size_t failed;
     const char* current_test;
-    int current_assertions;
+    size_t current_assertions;
     Ckester_OutputVerbosity verbosity;
 } Ckester_TestResults;
 
@@ -56,8 +55,8 @@ typedef struct Ckester_TestEntry {
 
 typedef struct Ckester_TestRegistry {
     Ckester_TestEntry* tests;
-    int count;
-    int capacity;
+    size_t count;
+    size_t capacity;
 } Ckester_TestRegistry;
 
 typedef struct Ckester_CliContext {
