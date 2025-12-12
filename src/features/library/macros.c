@@ -16,11 +16,11 @@
 #include <string.h>
 
 #include "../../core/contracts.c"
+#include "../../services/logger.c"
 
 /* Global jump buffer definition */
 CKESTER_WEAK jmp_buf _ckester_jmp_env;
 
-/* Global test results with default verbosity */
 /* Global test results with default verbosity */
 CKESTER_WEAK Ckester_TestResults _ckester_results = {
     0,
@@ -71,90 +71,73 @@ CKESTER_WEAK void _ckester_free_registry(void) {
     _ckester_registry.capacity = 0;
 }
 
+/* State for test execution loop */
+CKESTER_WEAK struct {
+    size_t failures_at_start;
+    bool active;
+} _ckester_current_test_state;
+
+CKESTER_WEAK void _ckester_test_begin(const char* name) {
+    _ckester_results.current_test = name;
+    _ckester_current_test_state.failures_at_start = _ckester_results.failed;
+    _ckester_current_test_state.active = true;
+    _ckester_results.current_assertions = 0;
+}
+
+CKESTER_WEAK int _ckester_test_should_run(void) {
+    return _ckester_current_test_state.active;
+}
+
+CKESTER_WEAK void _ckester_test_end(void) {
+    _ckester_current_test_state.active = false;
+    
+    bool failed = _ckester_results.failed > _ckester_current_test_state.failures_at_start;
+    
+    if (_ckester_results.verbosity.test) {
+        ckester_log_test_result(_ckester_results.current_test, failed);
+    }
+}
+
 extern Ckester_TestRegistry _ckester_registry;
 extern Ckester_TestResults _ckester_results;
 
 /* Run all registered tests */
 CKESTER_WEAK int _ckester_run_all_tests(void) {
     size_t test_failures = 0;
-
-    if (_ckester_results.verbosity.summary) {
-        printf("\n");
-    }
+    size_t suite_count = 0;
+    size_t suite_failed_count = 0;
 
     for (int i = 0; i < _ckester_registry.count; i++) {
+        suite_count++;
         int before_failed = _ckester_results.failed;
 
-        if (_ckester_results.verbosity.test) {
-            /* If explicit test verbosity is on, maybe we print start?
-               Prototype printed ▶ TestName.
-               SRS says 'test: Show test names'.
-               Let's keep the prototype behavior for 'test' flag. */
-            printf("\033[1;36m▶\033[0m %s\n", _ckester_registry.tests[i].name);
+        if (_ckester_results.verbosity.suite) {
+             printf("\033[1;36m%s\033[0m\n", _ckester_registry.tests[i].name);
         }
 
         /* Reset current test context */
-        _ckester_results.current_test = _ckester_registry.tests[i].name;
+        _ckester_results.current_test = _ckester_registry.tests[i].name; 
         _ckester_results.current_assertions = 0;
 
-        /* Execute test */
+        /* Execute test suite */
         _ckester_registry.tests[i].func();
 
         if (_ckester_results.failed > before_failed) {
-            test_failures++;
-            /* Always print failures, or maybe if verbosity.test/assertions?
-               SRS says "Failed assertions shall report...".
-               Usually failures are loud.
-               Prototype logic: if (!verbose) print FAIL line.
-               If verbose, it printed assertions.
-               Now we have independent flags.
-               If `verbose.test` is ON, we printed "▶ Name".
-               If invalid/failed, do we print "✗ Name"?
-               Let's print "✗ Name" if NOT verbosity.test (because "▶ Name" is already
-               there?) Actually, if we printed "▶ Name", we might want "✗ Name" too?
-               For now, preserving prototype logic:
-               If NOT verbose, print result line.
-               If verbose, we printed start line and assertions.
-               Let's stick to: If `verbosity.test` is FALSE, then we print the result
-               line. Wait, if `verbosity.test` is TRUE, we print "▶ Name". So we
-               should probably NOT print "✗ Name" again? Or maybe "✗ Name" is the
-               result. Let's simplify: If we showed start "▶", we don't need "✗"
-               unless we want to show end status. Let's use (!verbosity.test) for now.
-             */
-            if (_ckester_results.verbosity.test) {
-                fprintf(stderr, "\033[1;31m✗\033[0m %s\n",
-                        _ckester_registry.tests[i].name);
-            }
-        } else {
-            if (_ckester_results.verbosity.test) {
-                printf("\033[1;32m✓\033[0m %s\n", _ckester_registry.tests[i].name);
-            }
-        }
-
-        if (_ckester_results.verbosity.summary) {
-            printf("\n");
+            test_failures++; 
+            suite_failed_count++;
         }
     }
 
-    printf("\n");
-
-    if (test_failures == 0) {
-        printf("[INFO]:  All tests passed\n");
-        printf("         %zu tests, %zu assertions\n", _ckester_registry.count,
-               _ckester_results.passed);
-        /* Simple cleanup for now, though OS handles it usually */
-        if (_ckester_registry.tests)
-            free(_ckester_registry.tests);
-        return 0;
-    } else {
-        printf("\033[1;31m[FAIL]:\033[0m %zu/%zu tests failed\n", test_failures,
-               _ckester_registry.count);
-        printf("         %zu assertions passed, %zu failed\n",
-               _ckester_results.passed, _ckester_results.failed);
-        if (_ckester_registry.tests)
-            free(_ckester_registry.tests);
-        return 1;
+    if (_ckester_results.verbosity.summary) {
+        ckester_log_summary_start();
+        ckester_log_summary_item("SUITE", suite_count, suite_failed_count);
+        ckester_log_summary_item("ASSERTION", _ckester_results.passed + _ckester_results.failed, _ckester_results.failed);
     }
+    
+    if (_ckester_registry.tests)
+            free(_ckester_registry.tests);
+
+    return test_failures > 0 ? 1 : 0;
 }
 
 /* Assertion Macros */
@@ -163,13 +146,11 @@ CKESTER_WEAK int _ckester_run_all_tests(void) {
         _ckester_results.current_assertions++;                           \
         if (!(condition)) {                                              \
             _ckester_results.failed++;                                   \
-            fprintf(stderr, "    \033[1;31m✗\033[0m %s\n", msg);         \
-            fprintf(stderr, "      at %s:%d\n", __FILE__, __LINE__);     \
+            ckester_log_assertion_failure(msg, __FILE__, __LINE__);      \
         } else {                                                         \
             _ckester_results.passed++;                                   \
             if (_ckester_results.verbosity.assertions) {                 \
-                fprintf(stdout, "    \033[1;32m✓\033[0m %s\n", msg);     \
-                fprintf(stdout, "      at %s:%d\n", __FILE__, __LINE__); \
+                ckester_log_assertion_success(msg, __FILE__, __LINE__);  \
             }                                                            \
         }                                                                \
     } while (0)
@@ -223,17 +204,9 @@ CKESTER_WEAK int _ckester_run_all_tests(void) {
     static void ckester_suite_##name(void)
 #endif
 
-/* Test definition macro
- * Uses setjmp to define a failure handling point.
- * IF setjmp returns 0: execute the block.
- * IF setjmp returns non-zero (via longjmp): assertion failed, block entry
- * skipped (effectively break).
- */
-#define CKESTER_TEST(name)                          \
-    _ckester_results.current_test = #name;          \
-    if (_ckester_results.verbosity.test) {          \
-        printf("  \033[1;36m▶\033[0m %s\n", #name); \
-    }
+/* Test definition macro with loop for result logging */
+#define CKESTER_TEST(name) \
+    for (_ckester_test_begin(#name); _ckester_test_should_run(); _ckester_test_end())
 
 CKESTER_WEAK int main(int argc, char* argv[]) {
     for (int i = 1; i < argc; i++) {

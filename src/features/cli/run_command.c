@@ -9,6 +9,7 @@
 #include "../../core/contracts.c"
 #include "../../services/fs.c"
 #include "../../services/sys.c"
+#include "../../services/logger.c"
 
 static void _ckester_run_command_ensure_batch_exec(
     Ckester_String* test_batch_compilation_command,
@@ -36,29 +37,36 @@ static void _ckester_run_command_ensure_batch_exec(
     int compile_result = ckester_sys_execute(test_batch_compilation_command->data);
 
     if (ctx->verbosity.src) {
-        printf("[SRC]: ");
-
+        Ckester_String src_list = ckester_string_init((Ckester_StringInitParams){0});
+        
         /**
          * Since the command by this point has a pattern like: 'cc file1.c ...'
          * we can print the sources used to compile this batch binary by
          * separating the string by spaces.
          */
-        char* src_filepath = strtok(test_batch_compilation_command->data, " ");
+        char* cmd_copy = strdup(test_batch_compilation_command->data);
+        char* src_filepath = strtok(cmd_copy, " ");
         src_filepath = strtok(NULL, " "); /** Skips the c compiler prefix */
 
+        bool first = true;
         while (NULL != src_filepath) {
-            printf("%s", src_filepath);
-            src_filepath = strtok(NULL, " ");
             if (strcmp(src_filepath, "-o") == 0) break;
-            if (src_filepath) printf(", ");
+            
+            if (!first) ckester_string_push(&src_list, ", ");
+            ckester_string_push(&src_list, src_filepath);
+            first = false;
+            
+            src_filepath = strtok(NULL, " ");
         }
-
-        printf("\n");
+        
+        ckester_log_header("SRC", "%s", src_list.data);
+        ckester_string_free(&src_list);
+        free(cmd_copy);
     }
 
     if (compile_result == 0) {
         if (ctx->verbosity.bin) {
-            printf("[BIN]: Running %s\n", binary_path);
+            ckester_log_header("BIN", "%s", binary_path);
         }
 
         Ckester_String run_cmd = ckester_string_init((Ckester_StringInitParams){0});
@@ -67,7 +75,7 @@ static void _ckester_run_command_ensure_batch_exec(
         ckester_sys_execute(run_cmd.data);
         ckester_string_free(&run_cmd);
     } else {
-        printf("[ERROR]: Compilation failed for batch %d\n", batch_counter - 1);
+        ckester_log_header("ERROR", "Compilation failed for batch %d", batch_counter - 1);
     }
 
     ckester_string_clear(test_batch_compilation_command);
@@ -103,6 +111,8 @@ static void _ckester_run_command_add_filepath_to_batch(
 }
 
 int ckester_run_command(Ckester_CliContext* ctx) {
+    /* Initialize logger based on CLI context if needed, though simpler to use default for now 
+       or assume enabled by default as per logger.c implementation. */
     char* path = strtok(ctx->paths, ",");
     /**
      * This will be the resulting command for compiling a batch of
