@@ -42,7 +42,7 @@ Ckester provides:
 └──────┬──────┘
        │ writes tests using
        ↓
-┌─────────────────┐     compiles with      ┌──────────┐
+┌─────────────────┐     compiles with       ┌──────────┐
 │  Ckester API    │────────────────────────→│ Compiler │
 │  (Macros/Types) │                         └──────────┘
 └─────────────────┘

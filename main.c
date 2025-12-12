@@ -2,9 +2,9 @@
 #include <string.h>
 
 #include "src/core/contracts.c"
-#include "src/feature/cli/help_command.c"
-#include "src/feature/cli/run_command.c"
-#include "src/feature/cli/version_command.c"
+#include "src/features/cli/help_command.c"
+#include "src/features/cli/run_command.c"
+#include "src/features/cli/version_command.c"
 
 int main(int argc, char *argv[]) {
   Ckester_CliContext ctx = {

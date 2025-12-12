@@ -129,6 +129,11 @@ ckester/
   - `cli/parse.c` - Parse CLI arguments
   - `cli/help.c` - Display help text
   - `cli/run.c` - Execute run command
+- `library/` - The runtime testing library linked into test executables
+  - `library/macros.c` - Assertion and test definition macros
+  - `library/registry.c` - Test registration and management
+  - `library/runner.c` - Test execution loop
+  - `library/results.c` - Result tracking and aggregation
 
 **Dependencies:** Models, services, components, other features
 
