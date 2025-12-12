@@ -33,11 +33,28 @@ static void _ckester_run_command_ensure_batch_exec(
     ckester_string_push(test_batch_compilation_command, "-o ");
     ckester_string_push(test_batch_compilation_command, binary_path);
 
-    if (ctx->verbosity.src) {
-        printf("[CMD]: %s\n", test_batch_compilation_command->data);
-    }
-
     int compile_result = ckester_sys_execute(test_batch_compilation_command->data);
+
+    if (ctx->verbosity.src) {
+        printf("[SRC]: ");
+
+        /**
+         * Since the command by this point has a pattern like: 'cc file1.c ...'
+         * we can print the sources used to compile this batch binary by
+         * separating the string by spaces.
+         */
+        char* src_filepath = strtok(test_batch_compilation_command->data, " ");
+        src_filepath = strtok(NULL, " "); /** Skips the c compiler prefix */
+
+        while (NULL != src_filepath) {
+            printf("%s", src_filepath);
+            src_filepath = strtok(NULL, " ");
+            if (strcmp(src_filepath, "-o") == 0) break;
+            if (src_filepath) printf(", ");
+        }
+
+        printf("\n");
+    }
 
     if (compile_result == 0) {
         if (ctx->verbosity.bin) {
@@ -83,10 +100,6 @@ static void _ckester_run_command_add_filepath_to_batch(
 
     ckester_string_push(test_batch_compilation_command, filepath);
     ckester_string_push(test_batch_compilation_command, " ");
-
-    if (ctx->verbosity.src) {
-        printf("[SRC]: %s\n", filepath);
-    }
 }
 
 int ckester_run_command(Ckester_CliContext* ctx) {

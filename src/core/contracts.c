@@ -8,7 +8,7 @@
 /**
  * 5 MB
  */
-const size_t CKESTER_DEFAULT_SIZE_PATH = 8 * 1000 * 1000 * 5;
+static const size_t CKESTER_DEFAULT_SIZE_PATH = 8 * 1000 * 1000 * 5;
 
 /* Global jump buffer for assertion failures */
 extern jmp_buf _ckester_jmp_env;

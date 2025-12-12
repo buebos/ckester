@@ -1,6 +1,15 @@
 #ifndef __CKESTER_FEATURES_LIBRARY_MACROS_C__
 #define __CKESTER_FEATURES_LIBRARY_MACROS_C__
 
+/* Definitions to avoid multiple symbol collisions during batch compilation */
+#if defined(__GNUC__) || defined(__clang__)
+#define CKESTER_WEAK __attribute__((weak))
+#elif defined(_MSC_VER)
+#define CKESTER_WEAK __declspec(selectany)
+#else
+#define CKESTER_WEAK
+#endif
+
 #include <setjmp.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,11 +18,11 @@
 #include "../../core/contracts.c"
 
 /* Global jump buffer definition */
-jmp_buf _ckester_jmp_env;
+CKESTER_WEAK jmp_buf _ckester_jmp_env;
 
 /* Global test results with default verbosity */
 /* Global test results with default verbosity */
-Ckester_TestResults _ckester_results = {
+CKESTER_WEAK Ckester_TestResults _ckester_results = {
     0,
     0,
     0,
@@ -24,7 +33,7 @@ Ckester_TestResults _ckester_results = {
     {true, true, true, true, true, false, true, true}};
 
 /* Helper to enable full verbosity (debug mode) */
-void ckester_results_enable_all_verbosity(void) {
+CKESTER_WEAK void ckester_results_enable_all_verbosity(void) {
     _ckester_results.verbosity.build = true;
     _ckester_results.verbosity.bin = true;
     _ckester_results.verbosity.src = true;
@@ -36,10 +45,10 @@ void ckester_results_enable_all_verbosity(void) {
 }
 
 /* Global registry instance */
-Ckester_TestRegistry _ckester_registry = {NULL, 0, 0};
+CKESTER_WEAK Ckester_TestRegistry _ckester_registry = {NULL, 0, 0};
 
 /* Register a test function with its name */
-void _ckester_register_test(void (*test)(void), const char* name) {
+CKESTER_WEAK void _ckester_register_test(void (*test)(void), const char* name) {
     if (_ckester_registry.count >= _ckester_registry.capacity) {
         _ckester_registry.capacity =
             _ckester_registry.capacity == 0 ? 8 : _ckester_registry.capacity * 2;
@@ -53,7 +62,7 @@ void _ckester_register_test(void (*test)(void), const char* name) {
 }
 
 /* Cleanup registry memory */
-void _ckester_free_registry(void) {
+CKESTER_WEAK void _ckester_free_registry(void) {
     if (_ckester_registry.tests != NULL) {
         free(_ckester_registry.tests);
         _ckester_registry.tests = NULL;
@@ -66,7 +75,7 @@ extern Ckester_TestRegistry _ckester_registry;
 extern Ckester_TestResults _ckester_results;
 
 /* Run all registered tests */
-int _ckester_run_all_tests(void) {
+CKESTER_WEAK int _ckester_run_all_tests(void) {
     size_t test_failures = 0;
 
     if (_ckester_results.verbosity.summary) {
@@ -112,12 +121,12 @@ int _ckester_run_all_tests(void) {
                result. Let's simplify: If we showed start "▶", we don't need "✗"
                unless we want to show end status. Let's use (!verbosity.test) for now.
              */
-            if (!_ckester_results.verbosity.test) {
+            if (_ckester_results.verbosity.test) {
                 fprintf(stderr, "\033[1;31m✗\033[0m %s\n",
                         _ckester_registry.tests[i].name);
             }
         } else {
-            if (!_ckester_results.verbosity.test) {
+            if (_ckester_results.verbosity.test) {
                 printf("\033[1;32m✓\033[0m %s\n", _ckester_registry.tests[i].name);
             }
         }
@@ -154,10 +163,8 @@ int _ckester_run_all_tests(void) {
         _ckester_results.current_assertions++;                           \
         if (!(condition)) {                                              \
             _ckester_results.failed++;                                   \
-            if (_ckester_results.verbosity.assertions) {                 \
-                fprintf(stderr, "    \033[1;31m✗\033[0m %s\n", msg);     \
-                fprintf(stderr, "      at %s:%d\n", __FILE__, __LINE__); \
-            }                                                            \
+            fprintf(stderr, "    \033[1;31m✗\033[0m %s\n", msg);         \
+            fprintf(stderr, "      at %s:%d\n", __FILE__, __LINE__);     \
         } else {                                                         \
             _ckester_results.passed++;                                   \
             if (_ckester_results.verbosity.assertions) {                 \
@@ -228,7 +235,7 @@ int _ckester_run_all_tests(void) {
         printf("  \033[1;36m▶\033[0m %s\n", #name); \
     }
 
-int main(int argc, char* argv[]) {
+CKESTER_WEAK int main(int argc, char* argv[]) {
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--verbose") == 0 || strcmp(argv[i], "-v") == 0) {
             ckester_results_enable_all_verbosity();
